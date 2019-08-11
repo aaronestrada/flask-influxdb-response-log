@@ -1,5 +1,6 @@
 import json
-from flask import Flask, request
+from datetime import datetime
+from flask import Flask, request, g
 from flask_influxdb_client import InfluxDB
 from flask_influxdb_client.flask_influxdb_client import influxdb
 
@@ -35,7 +36,7 @@ class FlaskInfluxDBResponseLog:
                                          Namespaces are useful in case you use the same measurement for different applications.
     """
 
-    _error_write_callback = None
+    __error_write_callback__ = None
 
     def __init__(self, app: Flask = None):
         """
@@ -51,7 +52,7 @@ class FlaskInfluxDBResponseLog:
         :param f: Function to set as abort function
         :return:
         """
-        self._error_write_callback = f
+        self.__error_write_callback__ = f
 
     def _error_write_raise(self, error: Exception):
         """
@@ -59,8 +60,8 @@ class FlaskInfluxDBResponseLog:
         :param error: Error retrieved
         :return:
         """
-        if self._error_write_callback is not None:
-            self._error_write_callback(error=error)
+        if self.__error_write_callback__ is not None:
+            self.__error_write_callback__(error=error)
 
     def init_app(self, app: Flask):
         """
@@ -105,8 +106,13 @@ class FlaskInfluxDBResponseLog:
                     'payload',  # Payload data
                     'status_code',  # Status code for response
                     'response',  # Response value
-                    'response_content_type'
+                    'response_content_type',  # Content type for response
+                    'response_time'  # Response time
                 ]
+
+        @app.before_request
+        def before_request():
+            g.start_time = datetime.now()
 
         @app.after_request
         def after_request(response):
@@ -115,6 +121,9 @@ class FlaskInfluxDBResponseLog:
             :param response: Response from request
             :return: Response to output to user
             """
+            # Request execution time
+            request_time = datetime.now() - g.start_time
+
             headers = request.headers.to_wsgi_list()
             response_content_type = response.content_type
 
@@ -169,6 +178,7 @@ class FlaskInfluxDBResponseLog:
                 status_code=response.status_code,
                 query_string=query_string,
                 response=response_data,
+                response_time=request_time,
                 response_content_type=response_content_type
             )
 

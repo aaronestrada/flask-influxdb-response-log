@@ -23,6 +23,7 @@ The extension saves all requests and responses for Flask applications. Measureme
 |status_code|HTTP status code for response |
 |response|Response content|
 |response_content_type|Content type for response|
+|response_time|Execution time for request -> response|
 
 It is also possible to define a custom decorator whenever there is a problem with connection and writing points on InfluxDB. 
 
@@ -122,4 +123,5 @@ payload                 {"a":2}
 status_code             200
 response                {"status":"ok"}
 response_content_type   application/json
+response_time           <request -> response execution time>
 ```
