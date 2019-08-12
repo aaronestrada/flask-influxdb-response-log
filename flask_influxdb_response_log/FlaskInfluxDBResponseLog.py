@@ -34,6 +34,7 @@ class FlaskInfluxDBResponseLog:
     RESPONSE_LOG_INFLUXDB_MEASUREMENT    Measurement name to store response logging
     RESPONSE_LOG_INFLUXDB_NAMESPACE      Namespace associated to a response logging.
                                          Namespaces are useful in case you use the same measurement for different applications.
+    RESPONSE_LOG_STATUS_CODE_ONLY        List of status codes to keep in log. If empty or not found, all status codes will be saved.
     """
 
     __error_write_callback__ = None
@@ -69,6 +70,13 @@ class FlaskInfluxDBResponseLog:
         :param app: Flask application to configure
         :return:
         """
+        status_code_only = app.config.get('RESPONSE_LOG_STATUS_CODE_ONLY')
+        if type(status_code_only) != list:
+            status_code_only = []
+
+        # Flag to indicate there is at least one filter on status codes
+        filter_status_code = len(status_code_only) > 0
+
         influx_db_connection = InfluxDB(app=app, prefix='RESPONSE_LOG')
 
         # Set measurement name to store response logging
@@ -112,7 +120,12 @@ class FlaskInfluxDBResponseLog:
 
         @app.before_request
         def before_request():
-            g.start_time = datetime.now()
+            """
+            Processing before accepting request
+            :return:
+            """
+            # Keep UTC time instead of local time
+            g.start_time = datetime.utcnow()
 
         @app.after_request
         def after_request(response):
@@ -121,71 +134,84 @@ class FlaskInfluxDBResponseLog:
             :param response: Response from request
             :return: Response to output to user
             """
-            # Request execution time
-            request_time = datetime.now() - g.start_time
-
-            headers = request.headers.to_wsgi_list()
-            response_content_type = response.content_type
-
-            headers_js = {header[0]: header[1] for header in headers if len(header) == 2}
-            json_expected = True \
-                if 'Content-Type' in headers_js and headers_js['Content-Type'] == 'application/json' \
-                else False
-
-            # Payload data from request
-            if json_expected:
-                payload = request.get_json(silent=True)
-                if payload is not None:
-                    try:
-                        # Remove spaces prior to store in database
-                        payload = json.dumps(payload, separators=(',', ':'))
-                    except json.JSONDecodeError:
-                        payload = ''
+            # Check if there is a filter list and if status code is in filter
+            status_code = response.status_code  # integer type
+            if filter_status_code is False:
+                log_response = True
             else:
-                try:
-                    payload = request.get_data().decode('utf-8')
-                except UnicodeEncodeError:
-                    payload = ''
+                log_response = False if status_code not in status_code_only else True
 
-            # Get response data
-            response_data = response.get_data(as_text=True)
-            if response_content_type == 'application/json':
+            if log_response is True:
+                json_separators = (',', ':')
+
+                # Request execution time (UTC)
+                start_time = g.start_time
+                response_time = str(datetime.utcnow() - start_time)
+                start_time_iso = start_time.isoformat(sep=' ')
+
+                # Store headers as JSON
+                headers = request.headers.to_wsgi_list()
+                headers_js = {header[0]: header[1] for header in headers if len(header) == 2}
+                json_expected = True \
+                    if 'Content-Type' in headers_js and headers_js['Content-Type'] == 'application/json' \
+                    else False
+
+                # Payload data from request
+                if json_expected:
+                    payload = request.get_json(silent=True)
+                    if payload is not None:
+                        try:
+                            # Remove spaces prior to store in database
+                            payload = json.dumps(payload, separators=json_separators)
+                        except json.JSONDecodeError:
+                            payload = ''
+                else:
+                    try:
+                        payload = request.get_data().decode('utf-8')
+                    except UnicodeEncodeError:
+                        payload = ''
+
+                # Get response data
+                response_content_type = response.content_type
+                response_data = response.get_data(as_text=True)
+                if response_content_type == 'application/json':
+                    try:
+                        response_data = json.dumps(json.loads(response_data), separators=json_separators)
+                    except json.JSONDecodeError:
+                        pass
+
                 try:
-                    response_data = json.dumps(json.loads(response_data), separators=(',', ':'))
+                    headers_data = json.dumps(headers_js, separators=json_separators)
                 except json.JSONDecodeError:
-                    pass
+                    headers_data = ''
 
-            try:
-                headers_data = json.dumps(headers_js, separators=(',', ':'))
-            except json.JSONDecodeError:
-                headers_data = ''
+                # Query string decoding
+                try:
+                    query_string = request.query_string.decode('utf-8')
+                except UnicodeEncodeError:
+                    query_string = ''
 
-            # Query string decoding
-            try:
-                query_string = request.query_string.decode('utf-8')
-            except UnicodeEncodeError:
-                query_string = ''
+                # Create and write response on InfluxDB
+                MeasurementResponseLog(
+                    time=start_time_iso,
+                    namespace=namespace,
+                    path=request.path,
+                    method=request.method,
+                    remote_addr=request.remote_addr,
+                    full_path=request.full_path,
+                    payload=payload,
+                    headers=headers_data,
+                    status_code=status_code,
+                    query_string=query_string,
+                    response=response_data,
+                    response_time=response_time,
+                    response_content_type=response_content_type
+                )
 
-            # Create and write response on InfluxDB
-            MeasurementResponseLog(
-                namespace=namespace,
-                path=request.path,
-                method=request.method,
-                remote_addr=request.remote_addr,
-                full_path=request.full_path,
-                payload=payload,
-                headers=headers_data,
-                status_code=response.status_code,
-                query_string=query_string,
-                response=response_data,
-                response_time=request_time,
-                response_content_type=response_content_type
-            )
-
-            try:
-                MeasurementResponseLog.commit(client=influx_db_connection.connection)
-            except Exception as error:
-                # In case of error, execute decorated function
-                self._error_write_raise(error=error)
+                try:
+                    MeasurementResponseLog.commit(client=influx_db_connection.connection)
+                except Exception as error:
+                    # In case of error, execute decorated function
+                    self._error_write_raise(error=error)
 
             return response

@@ -7,6 +7,7 @@ The extension saves all requests and responses for Flask applications. Measureme
 ### Tags
 |Name|Description|
 |---|---|
+|time|Request time (UTC)|
 |namespace|Namespace for response. This value is useful whenever there is one measurement that tracks different applications|
 |path|Accessed resource (without base URL nor query string)|
 |method|Method used to access resource (POST, GET, PUT, DELETE, PATCH)|
@@ -25,7 +26,9 @@ The extension saves all requests and responses for Flask applications. Measureme
 |response_content_type|Content type for response|
 |response_time|Execution time for request -> response|
 
-It is also possible to define a custom decorator whenever there is a problem with connection and writing points on InfluxDB. 
+It is also possible to define: 
+- a custom decorator whenever there is a problem with connection and writing points on InfluxDB;
+- a filter of response status codes to keep in log. 
 
 ## Requirements
 * Python >= 3
@@ -94,6 +97,7 @@ RESPONSE_LOG_INFLUXDB_POOL_SIZE      urllib3 connection pool size. Defaults to 1
 RESPONSE_LOG_INFLUXDB_MEASUREMENT    Measurement name to store response logging
 RESPONSE_LOG_INFLUXDB_NAMESPACE      Namespace associated to a response logging.
                                      Namespaces are useful in case you use the same measurement for different applications.
+RESPONSE_LOG_STATUS_CODE_ONLY        List of status codes to keep in log. If empty or not found, all status codes will be saved.
 ```                                        
 
 ## Testing
@@ -111,7 +115,7 @@ curl -d "{\"a\":1}" -H "Content-Type: application/json" -X POST http://127.0.0.1
 You should have the following item in the measurement "response_log" on your local InfluxDB instance. **Note**: you must create the database "mydb" before testing the resource.
 
 ```
-time                    <time for request + response> 
+time                    <UTC time for request + response> 
 namespace               test
 path                    /check
 method                  POST
