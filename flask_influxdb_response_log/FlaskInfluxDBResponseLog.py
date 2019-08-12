@@ -173,7 +173,13 @@ class FlaskInfluxDBResponseLog:
 
                 # Get response data
                 response_content_type = response.content_type
-                response_data = response.get_data(as_text=True)
+
+                try:
+                    response_data = response.get_data(as_text=True)
+                except RuntimeError:
+                    # For files that are not possible to convert as text, a RuntimeError exception is thrown
+                    response_data = ''
+
                 if response_content_type == 'application/json':
                     try:
                         response_data = json.dumps(json.loads(response_data), separators=json_separators)
