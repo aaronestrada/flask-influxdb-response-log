@@ -34,6 +34,8 @@ class FlaskInfluxDBResponseLog:
     RESPONSE_LOG_INFLUXDB_MEASUREMENT    Measurement name to store response logging
     RESPONSE_LOG_INFLUXDB_NAMESPACE      Namespace associated to a response logging.
                                          Namespaces are useful in case you use the same measurement for different applications.
+    RESPONSE_LOG_INFLUXDB_APP_VERSION    Version of the application using the response logging (example: v1.2.3).
+                                         This field is useful to identify different versions of the same application.
     RESPONSE_LOG_STATUS_CODE_ONLY        List of status codes to keep in log. If empty or not found, all status codes will be saved.
     """
 
@@ -91,6 +93,7 @@ class FlaskInfluxDBResponseLog:
         """
         # Set namespace value from configuration
         namespace = app.config.get('RESPONSE_LOG_INFLUXDB_NAMESPACE')
+        app_version = app.config.get('RESPONSE_LOG_INFLUXDB_APP_VERSION', '')
 
         class MeasurementResponseLog(influxdb.SeriesHelper):
             """
@@ -102,6 +105,7 @@ class FlaskInfluxDBResponseLog:
                 series_name = measurement
                 tags = [
                     'namespace',  # Namespace for response
+                    'version',  # Version associated to namespace
                     'path',  # Path (without base_url or query string)
                     'method'  # Request method
                 ]
@@ -115,7 +119,8 @@ class FlaskInfluxDBResponseLog:
                     'status_code',  # Status code for response
                     'response',  # Response value
                     'response_content_type',  # Content type for response
-                    'response_time'  # Response time
+                    'response_time',
+                    'response_time_seconds'  # Response time (in seconds)
                 ]
 
         @app.before_request
@@ -146,7 +151,9 @@ class FlaskInfluxDBResponseLog:
 
                 # Request execution time (UTC)
                 start_time = g.start_time
-                response_time = str(datetime.utcnow() - start_time)
+                response_time_total = datetime.utcnow() - start_time
+                response_time = str(response_time_total)
+                response_time_seconds = response_time_total.total_seconds()
                 start_time_iso = start_time.isoformat(sep=' ')
 
                 # Store headers as JSON
@@ -201,6 +208,7 @@ class FlaskInfluxDBResponseLog:
                 MeasurementResponseLog(
                     time=start_time_iso,
                     namespace=namespace,
+                    version=app_version,
                     path=request.path,
                     method=request.method,
                     remote_addr=request.remote_addr,
@@ -211,6 +219,7 @@ class FlaskInfluxDBResponseLog:
                     query_string=query_string,
                     response=response_data,
                     response_time=response_time,
+                    response_time_seconds=response_time_seconds,
                     response_content_type=response_content_type
                 )
 
