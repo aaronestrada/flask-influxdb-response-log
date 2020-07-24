@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='flask-influxdb-response-log',
-    version='0.1.1',
+    version='0.1.2',
     description='Extension to logging response from Flask applications using InfluxDB.',
     license='BSD',
     author='Aaron Estrada Poggio',

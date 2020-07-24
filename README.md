@@ -9,6 +9,7 @@ The extension saves all requests and responses for Flask applications. Measureme
 |---|---|
 |time|Request time (UTC)|
 |namespace|Namespace for response. This value is useful whenever there is one measurement that tracks different applications|
+|version|Version for the application executing the response. This value is useful to identify the request from different versions of the same application.|
 |path|Accessed resource (without base URL nor query string)|
 |method|Method used to access resource (POST, GET, PUT, DELETE, PATCH)|
 
@@ -25,6 +26,7 @@ The extension saves all requests and responses for Flask applications. Measureme
 |response|Response content|
 |response_content_type|Content type for response|
 |response_time|Execution time for request -> response|
+|response_time_seconds|Execution time for request -> response (in seconds)|
 
 It is also possible to define: 
 - a custom decorator whenever there is a problem with connection and writing points on InfluxDB;
@@ -97,6 +99,8 @@ RESPONSE_LOG_INFLUXDB_POOL_SIZE      urllib3 connection pool size. Defaults to 1
 RESPONSE_LOG_INFLUXDB_MEASUREMENT    Measurement name to store response logging
 RESPONSE_LOG_INFLUXDB_NAMESPACE      Namespace associated to a response logging.
                                      Namespaces are useful in case you use the same measurement for different applications.
+RESPONSE_LOG_INFLUXDB_APP_VERSION    Version of the application using the response logging (example: v1.2.3).
+                                     This field is useful to identify different versions of the same application.
 RESPONSE_LOG_STATUS_CODE_ONLY        List of status codes to keep in log. If empty or not found, all status codes will be saved.
 ```                                        
 
@@ -117,6 +121,7 @@ You should have the following item in the measurement "response_log" on your loc
 ```
 time                    <UTC time for request + response> 
 namespace               test
+version                 v1.2.0
 path                    /check
 method                  POST
 remote_addr             127.0.0.1
@@ -128,4 +133,5 @@ status_code             200
 response                {"status":"ok"}
 response_content_type   application/json
 response_time           <request -> response execution time>
+response_time_seconds   10
 ```
