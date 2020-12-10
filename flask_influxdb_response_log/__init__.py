@@ -3,7 +3,7 @@
 from __future__ import absolute_import
 from .FlaskInfluxDBResponseLog import FlaskInfluxDBResponseLog
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 __all__ = (
     'FlaskInfluxDBResponseLog',

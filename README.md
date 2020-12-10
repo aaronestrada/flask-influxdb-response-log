@@ -78,30 +78,31 @@ response_log.init_app(app=app)
 
 ### Set connection to InfluxDB
 ```
-RESPONSE_LOG_INFLUXDB_HOST           Host for the InfluxDB host. Default is localhost.
-RESPONSE_LOG_INFLUXDB_PORT           InfluxDB HTTP API port. Default is 8086.
-RESPONSE_LOG_INFLUXDB_USER           InfluxDB server username. Default is root.
-RESPONSE_LOG_INFLUXDB_PASSWORD       InfluxDB server password. Default is root.
-RESPONSE_LOG_INFLUXDB_DATABASE       Optional database to connect.  Defaults to None.
-RESPONSE_LOG_INFLUXDB_SSL            Enables using HTTPS instead of HTTP. Defaults to False.
-RESPONSE_LOG_INFLUXDB_VERIFY_SSL     Enables checking HTTPS certificate. Defaults to False.
-RESPONSE_LOG_INFLUXDB_RETRIES        Number of retries the client will try before aborting, 0 indicates try until success.
-                                     Defaults to 3
-RESPONSE_LOG_INFLUXDB_TIMEOUT        Sets request timeout. Defaults to None.
-RESPONSE_LOG_INFLUXDB_USE_UDP        Use the UDP interfaces instead of http. Defaults to False.
-RESPONSE_LOG_INFLUXDB_UDP_PORT       UDP api port number. Defaults to 4444.
-RESPONSE_LOG_INFLUXDB_PROXIES        HTTP(S) proxy to use for Requests. Defaults to None.
-RESPONSE_LOG_INFLUXDB_POOL_SIZE      urllib3 connection pool size. Defaults to 10.
+RESPONSE_LOG_INFLUXDB_HOST                  Host for the InfluxDB host. Default is localhost.
+RESPONSE_LOG_INFLUXDB_PORT                  InfluxDB HTTP API port. Default is 8086.
+RESPONSE_LOG_INFLUXDB_USER                  InfluxDB server username. Default is root.
+RESPONSE_LOG_INFLUXDB_PASSWORD              InfluxDB server password. Default is root.
+RESPONSE_LOG_INFLUXDB_DATABASE              Optional database to connect.  Defaults to None.
+RESPONSE_LOG_INFLUXDB_SSL                   Enables using HTTPS instead of HTTP. Defaults to False.
+RESPONSE_LOG_INFLUXDB_VERIFY_SSL            Enables checking HTTPS certificate. Defaults to False.
+RESPONSE_LOG_INFLUXDB_RETRIES               Number of retries the client will try before aborting, 0 indicates try until success.
+                                            Defaults to 3
+RESPONSE_LOG_INFLUXDB_TIMEOUT               Sets request timeout. Defaults to None.
+RESPONSE_LOG_INFLUXDB_USE_UDP               Use the UDP interfaces instead of http. Defaults to False.
+RESPONSE_LOG_INFLUXDB_UDP_PORT              UDP api port number. Defaults to 4444.
+RESPONSE_LOG_INFLUXDB_PROXIES               HTTP(S) proxy to use for Requests. Defaults to None.
+RESPONSE_LOG_INFLUXDB_POOL_SIZE             urllib3 connection pool size. Defaults to 10.
 ```
 
 ### Logging
 ```
-RESPONSE_LOG_INFLUXDB_MEASUREMENT    Measurement name to store response logging
-RESPONSE_LOG_INFLUXDB_NAMESPACE      Namespace associated to a response logging.
-                                     Namespaces are useful in case you use the same measurement for different applications.
-RESPONSE_LOG_INFLUXDB_APP_VERSION    Version of the application using the response logging (example: v1.2.3).
-                                     This field is useful to identify different versions of the same application.
-RESPONSE_LOG_STATUS_CODE_ONLY        List of status codes to keep in log. If empty or not found, all status codes will be saved.
+RESPONSE_LOG_INFLUXDB_MEASUREMENT           Measurement name to store response logging
+RESPONSE_LOG_INFLUXDB_RETENTION_POLICY      Retention policy to use on data storage. If empty or not defined, it will use the default for the measurement.
+RESPONSE_LOG_INFLUXDB_NAMESPACE             Namespace associated to a response logging.
+                                            Namespaces are useful in case you use the same measurement for different applications.
+RESPONSE_LOG_INFLUXDB_APP_VERSION           Version of the application using the response logging (example: v1.2.3).
+                                            This field is useful to identify different versions of the same application.
+RESPONSE_LOG_STATUS_CODE_ONLY               List of status codes to keep in log. If empty or not found, all status codes will be saved.
 ```                                        
 
 ## Testing
